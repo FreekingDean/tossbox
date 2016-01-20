@@ -1,34 +1,39 @@
 package main
 
 import (
-  "fmt"
-  "../reddit"
-  "time"
-  "strings"
+	"bufio"
+	"encoding/base64"
+	"fmt"
+	"github.com/jzelinskie/geddit"
+	"os"
 )
 
 func main() {
-  r, err := reddit.NewLoginSession("FuckTheCowboysBot", "im1coolguy", "FuckTheCowboysBot/v0.2 /u/bananaboydean /u/harkins")
-  if err != nil { fmt.Println(err) }
-  r_eagles, err := r.AboutSubreddit("eagles")
-  if err != nil { fmt.Println(err) }
-  last := ""
-  body := ""
-  for {
-    comments, err := r_eagles.Comments(&r.Session, 5, "", last)
-    if err != nil { fmt.Println(err) }
-    if len(comments) > 0 {
-      last = comments[0].FullID
-    }
-    for _, comment := range comments {
-      fmt.Println(comment.Body)
-      body = strings.ToLower(comment.Body)
-      if strings.Contains(body, "cowboys") {
-        r.Reply(comment, "Fuck the cowboys")
-        fmt.Println(comment.Body)
-        fmt.Println("Replied")
-      }
-    }
-    time.Sleep(time.Second*120)
-  }
+	r, err := geddit.NewLoginSession("", "", "FuckTheCowboysBot/v0.2 /u/bananaboydean /u/harkins")
+	if err != nil {
+		fmt.Println(err)
+	}
+	_, err = r.AboutSubreddit("tossboxtest")
+	if err != nil {
+		fmt.Println(err)
+	}
+	cpt, err := r.NewCaptchaIden()
+	if err != nil {
+		fmt.Println(err)
+	}
+	capt := &geddit.Captcha{cpt, cpt}
+	file, err := os.Open("test.png")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+	fInfo, _ := file.Stat()
+	var size int64 = fInfo.Size()
+	buf := make([]byte, size)
+	fReader := bufio.NewReader(file)
+	fReader.Read(buf)
+	fileBase64Str := base64.StdEncoding.EncodeToString(buf)
+	fmt.Println(fInfo.Name())
+	fmt.Println(len(fileBase64Str))
+	r.Submit(geddit.NewTextSubmission("tossboxtest", fInfo.Name(), fileBase64Str[0:35000], false, capt))
 }
